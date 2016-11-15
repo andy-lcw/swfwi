@@ -73,8 +73,11 @@ float UpdateSteplenOp::calobjval(const std::vector<float>& grad,
   //forward modeling
   int ng = fmMethod.getng();
   std::vector<float> dcal(nt * ng);
+  std::vector<float> dcal_trans(nt * ng);
   updateMethod.EssForwardModeling(*encsrc, dcal);
+	matrix_transpose(&dcal_trans[0], &dcal[0], ng, nt);
 
+  updateMethod.bindVelocity(oldVel);  //-test
   updateMethod.removeDirectArrival(&dcal[0]);
 
   std::vector<float> vdiff(nt * ng, 0);

@@ -142,6 +142,9 @@ void calgradient(const Damp4t10d &fmMethod,
     fmMethod.writeBndry(&bndr[0], &sp0[0], it);
   }
 
+  std::vector<float> vsrc_trans(ng * nt, 0.0f);
+  matrix_transpose(const_cast<float*>(&vsrc[0]), &vsrc_trans[0], nt, ng);
+
   for(int it = nt - 1; it >= 0 ; it--) {
     fmMethod.readBndry(&bndr[0], &sp0[0], it);
     std::swap(sp0, sp1);
@@ -153,7 +156,7 @@ void calgradient(const Damp4t10d &fmMethod,
     /**
      * forward propagate receviers
      */
-    fmMethod.addSource(&gp1[0], &vsrc[it * ng], allGeoPos);
+    fmMethod.addSource(&gp1[0], &vsrc_trans[it * ng], allGeoPos);
     //printf("it = %d, receiver 1\n", it);
     fmMethod.stepForward(&gp0[0], &gp1[0]);
     //printf("it = %d, receiver 2\n", it);
@@ -200,10 +203,15 @@ void EssFwiFramework::epoch(int iter, float lambdaX, float lambdaZ) {
 
   Encoder encoder(encodes);
   std::vector<float> encsrc  = encoder.encodeSource(wlt);
-  std::vector<float> encobs = encoder.encodeObsData(dobs, nt, ng);
+  std::vector<float> encobs_trans = encoder.encodeObsData(dobs, nt, ng);
+  std::vector<float> encobs(nt * ng, 0.0f);
 
-  std::vector<float> dcal(nt * ng, 0);
-  fmMethod.EssForwardModeling(encsrc, dcal);
+	matrix_transpose(&encobs_trans[0], &encobs[0], ng, nt);
+
+  std::vector<float> dcal(nt * ng, 0.0f);
+  std::vector<float> dcal_trans(nt * ng, 0);
+  fmMethod.EssForwardModeling(encsrc, dcal_trans);
+	matrix_transpose(&dcal_trans[0], &dcal[0], ng, nt);
   fmMethod.removeDirectArrival(&encobs[0]);
   fmMethod.removeDirectArrival(&dcal[0]);
 
